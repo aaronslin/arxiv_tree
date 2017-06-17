@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="http://d3js.org/d3.v3.js"></script>
+
+
+<style>
+a {
+  text-decoration: none;
+  color: #FF5733;
+}
+
+#inputBox {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+path.link {
+  fill: none;
+  stroke: #666;
+  stroke-width: 1.5px;
+}
+
+circle {
+  fill: #ccc;
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+text {
+  fill: #000;
+  font: 10px sans-serif;
+  pointer-events: none;
+}
+
+</style>
+<body>
+<div id="inputBox">
+  <input type="text"></input>
+</div>
+<script>
+
+// get the data
+d3.csv("data/force-1.csv", function(error, links) {
+
+var nodes = {};
+
+// Compute the distinct nodes from the links.
+links.forEach(function(link) {
+    link.source = nodes[link.source] || 
+        (nodes[link.source] = {name: link.source});
+    link.target = nodes[link.target] || 
+        (nodes[link.target] = {name: link.target});
+    link.value = +link.value;
+});
+
+var width = 2400,
+    height = 2400;
+
+var force = d3.layout.force()
+    .nodes(d3.values(nodes))
+    .links(links)
+    .size([width, height])
+    .linkDistance(60)
+    .charge(-300)
+    .on("tick", tick)
+    .start();
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+// build the arrow.
+svg.append("svg:defs").selectAll("marker")
+    .data(["end"])      // Different link/path types can be defined here
+  .enter().append("svg:marker")    // This section adds in the arrows
+    .attr("id", String)
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 15)
+    .attr("refY", -1.5)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("orient", "auto")
+  .append("svg:path")
+    .attr("d", "M0,-5L10,0L0,5");
+
+// add the links and the arrows
+var path = svg.append("svg:g").selectAll("path")
+    .data(force.links())
+  .enter().append("svg:path")
+//    .attr("class", function(d) { return "link " + d.type; })
+    .attr("class", "link")
+    .attr("marker-end", "url(#end)");
+
+// define the nodes
+var node = svg.selectAll(".node")
+    .data(force.nodes())
+  .enter().append("g")
+    .attr("class", "node")
+    .call(force.drag);
+
+// add the nodes
+node.append("circle")
+    .attr("r", 5);
+
+node.append("foreignObject")
+  .append("xhtml:body")
+    .style("font", "14px 'Helvetica Neue'")
+    .html(function(d) {
+      return "<a href='http://arxiv.org/pdf/"+d.name+".pdf' target='_blank'>"+d.name+"</a>";
+    });
+
+// add the curvy lines
+function tick() {
+    path.attr("d", function(d) {
+        var dx = d.target.x - d.source.x,
+            dy = d.target.y - d.source.y,
+            dr = Math.sqrt(dx * dx + dy * dy);
+        return "M" + 
+            d.source.x + "," + 
+            d.source.y + "A" + 
+            dr + "," + dr + " 0 0,1 " + 
+            d.target.x + "," + 
+            d.target.y;
+    });
+
+    node
+        .attr("transform", function(d) { 
+        return "translate(" + d.x + "," + d.y + ")"; });
+}
+
+});
+
+</script>
+
+<!-- Import and configure the Firebase SDK -->
+<!-- These scripts are made available when the app is served or deployed on Firebase Hosting -->
+<!-- If you do not want to serve/host your project using Firebase Hosting see https://firebase.google.com/docs/web/setup -->
+<script src="/__/firebase/3.8.0/firebase.js"></script>
+<script src="/__/firebase/init.js"></script>
+
+<script src="scripts/main.js"></script>
+
+
+</body>
+</html>
