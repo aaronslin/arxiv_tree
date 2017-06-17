@@ -81,7 +81,146 @@ FriendlyChat.prototype.saveMessage = function(e) {
 
   }
 };
+function buildTable(data) {
+    var table = document.createElement("table");
+    table.className="gridtable";
+    var thead = document.createElement("thead");
+    var tbody = document.createElement("tbody");
+    var headRow = document.createElement("tr");
+    ["Name","Author","Subject"].forEach(function(el) {
+      var th=document.createElement("th");
+      th.appendChild(document.createTextNode(el));
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead); 
+    data.forEach(function(el) {
+      var tr = document.createElement("tr");
+      for (var o in el) {  
+        var td = document.createElement("td");
+        td.appendChild(document.createTextNode(el[o]))
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);  
+    });
+    table.appendChild(tbody); 
+    return table;
+}
+function myFunction() {
+    
+    var h = document.createElement("demo");
+    var t = document.createTextNode("Awesome! Now here are the papers, on Arxiv.org, which your Paper Lists!!");
+    h.appendChild(t);
+    h.style.fontSize = "20px"
+    document.getElementById("demo").appendChild(h);
+   
+    var Data = [
+  {"Article":"NLP Neural Nets","Author": "Michael Jordan","Subject":"NLP"},
+  {"Article":"E = MC Squared","Author": "Albert Einstein","Subject":"Physics"}
+];  
+  var n = document.createElement("demo");
+  n.appendChild(buildTable(Data));
+  document.getElementById("demo").appendChild(n);
 
+  var pie = new d3pie("pi", {
+  "header": {
+    "title": {
+      "text": "Paper Breakdown",
+      "fontSize": 24,
+      "font": "courier"
+    },
+    "subtitle": {
+      "text": "Who did this paper cite?",
+      "color": "#999999",
+      "fontSize": 12,
+      "font": "exo"
+    },
+    "titleSubtitlePadding": 10
+  },
+  "footer": {
+    "color": "#999999",
+    "fontSize": 10,
+    "font": "open sans",
+    "location": "bottom-left"
+  },
+  "size": {
+    "canvasWidth": 1000,
+    "pieInnerRadius": "50%",
+    "pieOuterRadius": "89%"
+  },
+  "data": {
+    "sortOrder": "value-desc",
+    "content": [
+      {
+        "label": "Economics",
+        "value": 5,
+        "color": "#7e3838"
+      },
+      {
+        "label": "Statistics",
+        "value": 8,
+        "color": "#7e6538"
+      },
+      {
+        "label": "Computer Science",
+        "value": 15,
+        "color": "#7c7e38"
+      },
+      {
+        "label": "Biology",
+        "value": 1,
+        "color": "#587e38"
+      },
+      {
+        "label": "Philosophy",
+        "value": 3,
+        "color": "#387e45"
+      }
+    ]
+  },
+  "labels": {
+    "outer": {
+      "format": "label-percentage1",
+      "pieDistance": 32
+    },
+    "inner": {
+      "format": "value",
+      "hideWhenLessThanPercentage": 3
+    },
+    "mainLabel": {
+      "font": "courier",
+      "fontSize": 11
+    },
+    "percentage": {
+      "color": "#080808",
+      "font": "exo",
+      "decimalPlaces": 0
+    },
+    "value": {
+      "color": "#f8f8f8",
+      "font": "exo",
+      "fontSize": 11
+    },
+    "lines": {
+      "enabled": true
+    },
+    "truncation": {
+      "enabled": true
+    }
+  },
+  "effects": {
+    "pullOutSegmentOnClick": {
+      "speed": 400,
+      "size": 8
+    }
+  },
+  "callbacks": {}
+});
+  var m = document.createElement(pie)
+  document.getElementById("demo").appendChild(m);
+
+
+}
 // Sets the URL of the given img element with the URL of the image stored in Cloud Storage.
 FriendlyChat.prototype.setImageUrl = function(imageUri, imgElement) {
   imgElement.src = imageUri;
