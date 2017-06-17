@@ -2,44 +2,17 @@ import re
 import pyPdf
 import urllib2 as UL
 import timeit
+import glob
+import os
+import json
 
 doc_fname="test_docs/1706.03762.pdf"
-text1 = """     <id>http://arxiv.org/abs/0707.3536v1</id>
-    <updated>2007-07-24T12:45:39Z</updated>
-    <published>2007-07-24T12:45:39Z</published>
-    <title>Degenerating families of dendrograms</title>
-    <summary>  Dendrograms used in data analysis are ultrametric spaces, hence objects of
-nonarchimedean geometry. It is known that there exist $p$-adic representation
-of dendrograms. Completed by a point at infinity, they can be viewed as
-subtrees of the Bruhat-Tits tree associated to the $p$-adic projective line.
-The implications are that certain moduli spaces known in algebraic geometry are
-$p$-adic parameter spaces of (families of) dendrograms, and stochastic
-classification can also be handled within this framework. At the end, we
-calculate the topology of the hidden part of a dendrogram.
-</summary>
-    <author>
-      <name>Patrick Erik Bradley</name>
-    </author>
-    <arxiv:doi xmlns:arxiv="http://arxiv.org/schemas/atom">10.1007/s00357-008-9009-5</arxiv:doi>
-    <link title="doi" href="http://dx.doi.org/10.1007/s00357-008-9009-5" rel="related"/>
-    <arxiv:comment xmlns:arxiv="http://arxiv.org/schemas/atom">13 pages, 8 figures</arxiv:comment>
-    <arxiv:journal_ref xmlns:arxiv="http://arxiv.org/schemas/atom">J. Classif. 25, 27-42 (2008)</arxiv:journal_ref>
-    <link href="http://arxiv.org/abs/0707.3536v1" rel="alternate" type="text/html"/>
-    <link title="pdf" href="http://arxiv.org/pdf/0707.3536v1" rel="related" type="application/pdf"/>
-    <arxiv:primary_category xmlns:arxiv="http://arxiv.org/schemas/atom" term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
-    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
-  </entry>
-  <entry>
-    <id>http://arxiv.org/abs/0707.4072v1</id>
-    <updated>2007-07-27T09:37:28Z</updated>
-    <published>2007-07-27T09:37:28Z</published>
-    <title>Families of dendrograms</title>"""
 test_id = "1706.03762"
 
 
 # arXiv
 
-class arxiv_obj:
+class Arxiv_obj:
 	def __init__(self):
 		self.citation_regex = r"(?i)(arxiv:[0-9]{4}\.[0-9]{4,5}v?[0-9]{0,2})"
 		self.rss_regex = r"<id>http:\/\/arxiv\.org\/abs\/(.*?)<\/id>"
@@ -63,9 +36,7 @@ class arxiv_obj:
 		queryItems = [self.category, maxKey+str(increment), startKey+str(start), sortBy]
 		queryJoin = "&".join(queryItems)
 		return self.rss_prefix + queryJoin
-
-
-arxiv = arxiv_obj()
+arxiv = Arxiv_obj()
 
 
 # Search PDF for arXiv citations
@@ -86,14 +57,20 @@ def all_arxiv_matches(text):
 def _strip_arxiv(id):
 	return re.sub('^arxiv:', '', id, flags=re.IGNORECASE)
 
-def _rm_self(arxiv_ids, id):
-	# Given id of article and a list of arxiv_ids, remove self
-	pass
+def _rm_self(ids, id):
+	if id in ids:
+		ids.remove(id)
+	return ids
+
+def _strip_version(id):
+	return id.split("v")[0]
 
 def get_arxiv_citations(id):
 	content = pdf_to_text(id)
 	matches = all_arxiv_matches(content)
-	matches = _rm_self([_strip_arxiv(id) for id in matches], id)
+	matches = [_strip_arxiv(file) for file in matches]
+	matches = [_strip_version(file) for file in matches]
+	matches = _rm_self(matches, id)
 	return matches
 
 #print get_arxiv_citations(doc_fname)
@@ -129,10 +106,67 @@ def search_rss(rss_url):
 	return re.findall(pattern, data)
 
 
+
+
+
+
+# Keeping track of the tree of arxiv papers
+
+
+class Paperset:
+	def __init__(self, repo):
+		self.sourceKey = "source"
+		self.init_ids = self.initial_repo_to_ids(repo)
+		self.ancestors = self.initialize_ancestors()
+		self.queue = self.init_ids
+
+	def initial_repo_to_ids(self, initial_repo):
+		filepaths = glob.glob(initial_repo)
+		filenames = [file.split("/")[-1] for file in filepaths]
+		ids = [_strip_version(file.replace(".pdf", "")) for file in filenames]
+		return ids
+
+	def initialize_ancestors(self):
+		ancestors = {}
+		#ancestors[self.sourceKey] = self.init_ids
+		return ancestors
+
+	def search_ancestors(self):
+		visited = self.queue
+		while len(self.queue) > 0:
+			paperID = self.queue.pop(0)
+			if not os.path.isfile(arxiv.get_dir(paperID)):
+				download_pdf(paperID)
+			citations = get_arxiv_citations(paperID)
+			for parent in citations:
+				if parent not in visited:
+					self.queue.append(parent)
+					visited.append(parent)
+			if paperID not in self.ancestors:
+				self.ancestors[paperID] = citations
+			self.save_ancestors()
+			print "Saved!"
+
+	def save_ancestors(self, childName):
+		with open('data.json', 'w') as filepath:
+			json.dump(self.ancestors, filepath)
+
+
+
+#June2017 = Paperset("./june_2017/*.pdf")
+#print June2017.init_ids
+
+July = Paperset("./july_2017/*.pdf")
+July.search_ancestors()
+July.save_ancestors()
+
+
+
+
+
 #download_pdf(test_id)
 
-fetch_pdfs(100)
-print search_rss(text1)
+#fetch_pdfs(100)
 
 """
 
