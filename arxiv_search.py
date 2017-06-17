@@ -5,6 +5,7 @@ from pdfminer.layout import LAParams
 from pdfminer.pdfpage import PDFPage
 import os
 import sys, getopt
+import re
 
 doc_fname="test_docs/1706.03762.pdf"
 
@@ -29,4 +30,11 @@ def convert(fname, pages=None):
     output.close
     return text 
 
-print convert(doc_fname)
+#print convert(doc_fname)
+
+def all_arxiv_matches(text):
+    pattern = r"(?i)(arxiv:[0-9]{4}\.[0-9]{4,5}v?[0-9]{0,2})"
+    return re.findall(pattern, text)
+
+text1 = "arXiv:1308.0850, 2013."
+print all_arxiv_matches(text1)
